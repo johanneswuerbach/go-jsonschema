@@ -26,6 +26,7 @@ package schemas
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
 
 	"dario.cat/mergo"
 )
@@ -162,8 +163,13 @@ type Type struct {
 }
 
 func (value *Type) Merge(types ...*Type) error {
+	opts := []func(*mergo.Config){
+		mergo.WithAppendSlice,
+		mergo.WithTransformers(typeListTransformer{}),
+	}
+
 	for _, t := range types {
-		if err := mergo.Merge(value, t); err != nil {
+		if err := mergo.Merge(value, t, opts...); err != nil {
 			return fmt.Errorf("%w: %w", ErrCannotMergeTypes, err)
 		}
 	}
@@ -224,6 +230,18 @@ func MergeTypes(types []*Type) (*Type, error) {
 	}
 
 	return result, nil
+}
+
+type typeListTransformer struct{}
+
+func (t typeListTransformer) Transformer(typ reflect.Type) func(dst, src reflect.Value) error {
+	if typ == reflect.TypeOf(TypeList{}) {
+		return func(dst, src reflect.Value) error {
+			return nil
+		}
+	}
+
+	return nil
 }
 
 type GoJSONSchemaExtension struct {
