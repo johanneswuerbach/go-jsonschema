@@ -194,10 +194,7 @@ func (g *Generator) findOutputFileForSchemaID(id string) (*output, error) {
 	return g.beginOutput(id, g.config.DefaultOutputName, g.config.DefaultPackageName)
 }
 
-func (g *Generator) beginOutput(
-	id string,
-	outputName, packageName string,
-) (*output, error) {
+func (g *Generator) beginOutput(id string, outputName, packageName string) (*output, error) {
 	if packageName == "" {
 		return nil, fmt.Errorf("%w: %q", errMapURIToPackageName, id)
 	}
@@ -436,9 +433,7 @@ func (g *schemaGenerator) generateReferencedType(ref string) (codegen.Type, erro
 	}, nil
 }
 
-func (g *schemaGenerator) generateDeclaredType(
-	t *schemas.Type, scope nameScope,
-) (codegen.Type, error) {
+func (g *schemaGenerator) generateDeclaredType(t *schemas.Type, scope nameScope) (codegen.Type, error) {
 	if decl, ok := g.output.declsBySchema[t]; ok {
 		return &codegen.NamedType{Decl: decl}, nil
 	}
@@ -576,9 +571,7 @@ func (g *schemaGenerator) structFieldValidators(
 	return validators
 }
 
-func (g *schemaGenerator) generateType(
-	t *schemas.Type, scope nameScope,
-) (codegen.Type, error) {
+func (g *schemaGenerator) generateType(t *schemas.Type, scope nameScope) (codegen.Type, error) {
 	typeIndex := 0
 
 	var typeShouldBePointer bool
@@ -661,10 +654,7 @@ func (g *schemaGenerator) generateType(
 	}
 }
 
-func (g *schemaGenerator) generateStructType(
-	t *schemas.Type,
-	scope nameScope,
-) (codegen.Type, error) {
+func (g *schemaGenerator) generateStructType(t *schemas.Type, scope nameScope) (codegen.Type, error) {
 	if len(t.Properties) == 0 {
 		if len(t.Required) > 0 {
 			g.warner("Object type with no properties has required fields; " +
@@ -808,10 +798,7 @@ func (g *schemaGenerator) defaultPropertyValue(prop *schemas.Type) any {
 	return prop.Default
 }
 
-func (g *schemaGenerator) generateTypeInline(
-	t *schemas.Type,
-	scope nameScope,
-) (codegen.Type, error) {
+func (g *schemaGenerator) generateTypeInline(t *schemas.Type, scope nameScope) (codegen.Type, error) {
 	two := 2
 
 	if t.Enum == nil && t.Ref == "" {
@@ -843,6 +830,15 @@ func (g *schemaGenerator) generateTypeInline(
 			g.warner("Property has multiple types; will be represented as interface{} with no validation")
 
 			return codegen.EmptyInterfaceType{}, nil
+		}
+
+		if len(t.AllOf) > 0 {
+			allOfType, err := schemas.MergeTypes(t.AllOf)
+			if err != nil {
+				return nil, fmt.Errorf("could not merge allOf types: %w", err)
+			}
+
+			return g.generateTypeInline(allOfType, scope)
 		}
 
 		if len(t.Type) == 0 {
@@ -887,9 +883,7 @@ func (g *schemaGenerator) generateTypeInline(
 	return g.generateDeclaredType(t, scope)
 }
 
-func (g *schemaGenerator) generateEnumType(
-	t *schemas.Type, scope nameScope,
-) (codegen.Type, error) {
+func (g *schemaGenerator) generateEnumType(t *schemas.Type, scope nameScope) (codegen.Type, error) {
 	if len(t.Enum) == 0 {
 		return nil, errEnumArrCannotBeEmpty
 	}
