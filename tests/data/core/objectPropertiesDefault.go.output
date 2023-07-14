@@ -159,47 +159,47 @@ func (j *EventTagsElem) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-type FoobarPlannersElem_0 struct {
+type ObjectPropertiesDefaultPlannersElem_0 struct {
 	// Plain corresponds to the JSON schema field "plain".
 	Plain *DefaultPlanner `json:"plain,omitempty" yaml:"plain,omitempty" mapstructure:"plain,omitempty"`
 }
 
 // UnmarshalJSON implements json.Unmarshaler.
-func (j *FoobarPlannersElem_0) UnmarshalJSON(b []byte) error {
+func (j *ObjectPropertiesDefaultPlannersElem_0) UnmarshalJSON(b []byte) error {
 	var raw map[string]interface{}
 	if err := json.Unmarshal(b, &raw); err != nil {
 		return err
 	}
-	type Plain FoobarPlannersElem_0
+	type Plain ObjectPropertiesDefaultPlannersElem_0
 	var plain Plain
 	if err := json.Unmarshal(b, &plain); err != nil {
 		return err
 	}
-	*j = FoobarPlannersElem_0(plain)
+	*j = ObjectPropertiesDefaultPlannersElem_0(plain)
 	return nil
 }
 
-type FoobarPlannersElem_1 struct {
+type ObjectPropertiesDefaultPlannersElem_1 struct {
 	// Decorated corresponds to the JSON schema field "decorated".
 	Decorated *DecoratedPlanner `json:"decorated,omitempty" yaml:"decorated,omitempty" mapstructure:"decorated,omitempty"`
 }
 
 // UnmarshalJSON implements json.Unmarshaler.
-func (j *FoobarPlannersElem_1) UnmarshalJSON(b []byte) error {
+func (j *ObjectPropertiesDefaultPlannersElem_1) UnmarshalJSON(b []byte) error {
 	var raw map[string]interface{}
 	if err := json.Unmarshal(b, &raw); err != nil {
 		return err
 	}
-	type Plain FoobarPlannersElem_1
+	type Plain ObjectPropertiesDefaultPlannersElem_1
 	var plain Plain
 	if err := json.Unmarshal(b, &plain); err != nil {
 		return err
 	}
-	*j = FoobarPlannersElem_1(plain)
+	*j = ObjectPropertiesDefaultPlannersElem_1(plain)
 	return nil
 }
 
-type FoobarPlannersElem struct {
+type ObjectPropertiesDefaultPlannersElem struct {
 	// Decorated corresponds to the JSON schema field "decorated".
 	Decorated *DecoratedPlanner `json:"decorated,omitempty" yaml:"decorated,omitempty" mapstructure:"decorated,omitempty"`
 
@@ -208,36 +208,36 @@ type FoobarPlannersElem struct {
 }
 
 // UnmarshalJSON implements json.Unmarshaler.
-func (j *FoobarPlannersElem) UnmarshalJSON(b []byte) error {
+func (j *ObjectPropertiesDefaultPlannersElem) UnmarshalJSON(b []byte) error {
 	var raw map[string]interface{}
 	if err := json.Unmarshal(b, &raw); err != nil {
 		return err
 	}
-	var foobarPlannersElem_0 FoobarPlannersElem_0
-	var foobarPlannersElem_1 FoobarPlannersElem_1
+	var objectPropertiesDefaultPlannersElem_0 ObjectPropertiesDefaultPlannersElem_0
+	var objectPropertiesDefaultPlannersElem_1 ObjectPropertiesDefaultPlannersElem_1
 	var errs []error
-	if err := foobarPlannersElem_0.UnmarshalJSON(b); err != nil {
+	if err := objectPropertiesDefaultPlannersElem_0.UnmarshalJSON(b); err != nil {
 		errs = append(errs, err)
 	}
-	if err := foobarPlannersElem_1.UnmarshalJSON(b); err != nil {
+	if err := objectPropertiesDefaultPlannersElem_1.UnmarshalJSON(b); err != nil {
 		errs = append(errs, err)
 	}
 	if len(errs) == 2 {
 		return fmt.Errorf("all validators failed: %s", errors.Join(errs...))
 	}
-	type Plain FoobarPlannersElem
+	type Plain ObjectPropertiesDefaultPlannersElem
 	var plain Plain
 	if err := json.Unmarshal(b, &plain); err != nil {
 		return err
 	}
-	*j = FoobarPlannersElem(plain)
+	*j = ObjectPropertiesDefaultPlannersElem(plain)
 	return nil
 }
 
-type Foobar struct {
+type ObjectPropertiesDefault struct {
 	// Active corresponds to the JSON schema field "active".
-	Active *string `json:"active,omitempty" yaml:"active,omitempty" mapstructure:"active,omitempty"`
+	Active interface{} `json:"active,omitempty" yaml:"active,omitempty" mapstructure:"active,omitempty"`
 
 	// Planners corresponds to the JSON schema field "planners".
-	Planners []FoobarPlannersElem `json:"planners,omitempty" yaml:"planners,omitempty" mapstructure:"planners,omitempty"`
+	Planners []ObjectPropertiesDefaultPlannersElem `json:"planners,omitempty" yaml:"planners,omitempty" mapstructure:"planners,omitempty"`
 }

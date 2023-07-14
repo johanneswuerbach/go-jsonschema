@@ -117,4 +117,7 @@ func (j *A10212AnyOfConfigurationsElem) UnmarshalJSON(b []byte) error {
 type A10212AnyOf struct {
 	// Configurations corresponds to the JSON schema field "configurations".
 	Configurations []A10212AnyOfConfigurationsElem `json:"configurations,omitempty" yaml:"configurations,omitempty" mapstructure:"configurations,omitempty"`
+
+	// Flags corresponds to the JSON schema field "flags".
+	Flags interface{} `json:"flags,omitempty" yaml:"flags,omitempty" mapstructure:"flags,omitempty"`
 }

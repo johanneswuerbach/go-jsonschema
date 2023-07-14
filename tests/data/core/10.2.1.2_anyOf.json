@@ -3,6 +3,16 @@
     "id": "https://example.com/objectAllOf",
     "type": "object",
     "properties": {
+        "flags": {
+            "anyOf": [
+                {
+                    "type": "string"
+                },
+                {
+                    "type": "boolean"
+                }
+            ]
+        },
         "configurations": {
             "type": "array",
             "items": {

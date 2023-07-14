@@ -31,7 +31,10 @@ import (
 	"dario.cat/mergo"
 )
 
-var ErrCannotMergeTypes = fmt.Errorf("cannot merge types")
+var (
+	ErrCannotMergeTypes = fmt.Errorf("cannot merge types")
+	ErrEmptyTypesList   = fmt.Errorf("types list is empty")
+)
 
 // Schema is the root schema.
 type Schema struct {
@@ -241,15 +244,19 @@ func AnyOf(types []*Type) (*Type, error) {
 
 func MergeTypes(types []*Type) (*Type, error) {
 	if len(types) == 0 {
-		return nil, nil
+		return nil, ErrEmptyTypesList
+	}
+
+	var result = &Type{}
+
+	if isPrimitiveTypeList(types) {
+		return result, nil
 	}
 
 	opts := []func(*mergo.Config){
 		mergo.WithAppendSlice,
 		mergo.WithTransformers(typeListTransformer{}),
 	}
-
-	var result = &Type{}
 
 	for _, t := range types {
 		if err := mergo.Merge(result, t, opts...); err != nil {
