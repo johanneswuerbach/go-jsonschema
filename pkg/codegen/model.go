@@ -309,6 +309,7 @@ func (NullType) Generate(out *Emitter) {
 type StructType struct {
 	Fields             []StructField
 	RequiredJSONFields []string
+	DefaultValue       interface{}
 }
 
 func (StructType) IsNillable() bool { return false }

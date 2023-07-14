@@ -27,6 +27,7 @@ var (
 	_ validator = new(defaultValidator)
 	_ validator = new(arrayValidator)
 	_ validator = new(stringValidator)
+	_ validator = new(anyOfValidator)
 )
 
 type requiredValidator struct {
@@ -103,17 +104,36 @@ type defaultValidator struct {
 }
 
 func (v *defaultValidator) generate(out *codegen.Emitter) {
-	defaultValue, err := v.tryDumpDefaultSlice(out.MaxLineLength())
-	if err != nil {
-		// Fallback to sdump in case we couldn't dump it properly.
-		defaultValue = litter.Sdump(v.defaultValue)
-	}
+	defaultValue := v.dumpDefaultValue(out)
 
 	out.Printlnf(`if v, ok := %s["%s"]; !ok || v == nil {`, varNameRawMap, v.jsonName)
 	out.Indent(1)
 	out.Printlnf(`%s.%s = %s`, varNamePlainStruct, v.fieldName, defaultValue)
 	out.Indent(-1)
 	out.Printlnf("}")
+}
+
+func (v *defaultValidator) dumpDefaultValue(out *codegen.Emitter) any {
+	nt, ok := v.defaultValueType.(*codegen.NamedType)
+	if v.defaultValueType != nil && ok {
+		dvm, ok := v.defaultValue.(map[string]any)
+		if ok {
+			namedFields := ""
+			for _, k := range sortedKeys(dvm) {
+				namedFields += fmt.Sprintf("\n%s: %s,", upperFirst(k), litter.Sdump(dvm[k]))
+			}
+			namedFields += "\n"
+
+			return fmt.Sprintf(`%s{%s}`, nt.Decl.GetName(), namedFields)
+		}
+	}
+
+	if defaultValue, err := v.tryDumpDefaultSlice(out.MaxLineLength()); err == nil {
+		return defaultValue
+	}
+
+	// Fallback to sdump in case we couldn't dump it properly.
+	return litter.Sdump(v.defaultValue)
 }
 
 func (v *defaultValidator) tryDumpDefaultSlice(maxLineLen uint) (string, error) {
@@ -257,4 +277,44 @@ func (v *stringValidator) desc() *validatorDesc {
 		hasError:            true,
 		beforeJSONUnmarshal: false,
 	}
+}
+
+type anyOfValidator struct {
+	fieldName string
+	elemCount int
+}
+
+func (v *anyOfValidator) generate(out *codegen.Emitter) {
+	for i := 0; i < v.elemCount; i++ {
+		out.Printlnf(`var %s_%d %s_%d`, lowerFirst(v.fieldName), i, upperFirst(v.fieldName), i)
+	}
+	out.Printlnf(`var errs []error`)
+	for i := 0; i < v.elemCount; i++ {
+		out.Printlnf(`if err := %s_%d.UnmarshalJSON(b); err != nil {`, lowerFirst(v.fieldName), i)
+		out.Indent(1)
+		out.Printlnf(`errs = append(errs, err)`)
+		out.Indent(-1)
+		out.Printlnf(`}`)
+	}
+
+	out.Printlnf("if len(errs) == %d {", v.elemCount)
+	out.Indent(1)
+	out.Printlnf(`return fmt.Errorf("all validators failed: %%s", errors.Join(errs...))`)
+	out.Indent(-1)
+	out.Printlnf("}")
+}
+
+func (v *anyOfValidator) desc() *validatorDesc {
+	return &validatorDesc{
+		hasError:            true,
+		beforeJSONUnmarshal: true,
+	}
+}
+
+func lowerFirst(s string) string {
+	return strings.ToLower(s[:1]) + s[1:]
+}
+
+func upperFirst(s string) string {
+	return strings.ToUpper(s[:1]) + s[1:]
 }

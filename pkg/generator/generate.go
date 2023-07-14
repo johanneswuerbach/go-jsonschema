@@ -472,6 +472,16 @@ func (g *schemaGenerator) generateDeclaredType(t *schemas.Type, scope nameScope)
 
 	if structType, ok := theType.(*codegen.StructType); ok {
 		var validators []validator
+
+		switch t.SubSchemaType {
+		case schemas.SubSchemaTypeAnyOf:
+			validators = append(validators, &anyOfValidator{decl.Name, len(structType.Fields)})
+
+			g.generateUnmarshaler(decl, validators)
+
+			return &codegen.NamedType{Decl: &decl}, nil
+		}
+
 		for _, f := range structType.RequiredJSONFields {
 			validators = append(validators, &requiredValidator{f, decl.Name})
 		}
@@ -507,6 +517,10 @@ func (g *schemaGenerator) generateDeclaredType(t *schemas.Type, scope nameScope)
 					Impl: formatter.generate(decl, validators),
 				})
 			}
+		}
+
+		if t.IsSubSchemaTypeElem || len(validators) > 0 {
+			g.generateUnmarshaler(decl, validators)
 		}
 	}
 
@@ -569,6 +583,66 @@ func (g *schemaGenerator) structFieldValidators(
 	}
 
 	return validators
+}
+
+func (g *schemaGenerator) generateUnmarshaler(decl codegen.TypeDecl, validators []validator) {
+	for _, v := range validators {
+		switch v.(type) {
+		case *anyOfValidator:
+			g.output.file.Package.AddImport("errors", "")
+		}
+
+		if v.desc().hasError {
+			g.output.file.Package.AddImport("fmt", "")
+
+			break
+		}
+	}
+
+	formats := []string{"json"}
+
+	g.output.file.Package.AddImport("encoding/json", "")
+
+	if g.config.ExtraImports {
+		formats = append(formats, "yaml")
+
+		g.output.file.Package.AddImport(g.config.YAMLPackage, "yaml")
+	}
+
+	for _, format := range formats {
+		format := format
+
+		g.output.file.Package.AddDecl(&codegen.Method{
+			Impl: func(out *codegen.Emitter) {
+
+				out.Commentf("Unmarshal%s implements %s.Unmarshaler.", strings.ToUpper(format), format)
+				out.Printlnf("func (j *%s) Unmarshal%s(b []byte) error {", decl.Name, strings.ToUpper(format))
+				out.Indent(1)
+				out.Printlnf("var %s map[string]interface{}", varNameRawMap)
+				out.Printlnf("if err := %s.Unmarshal(b, &%s); err != nil { return err }", format, varNameRawMap)
+				for _, v := range validators {
+					if v.desc().beforeJSONUnmarshal {
+						v.generate(out)
+					}
+				}
+
+				out.Printlnf("type Plain %s", decl.Name)
+				out.Printlnf("var %s Plain", varNamePlainStruct)
+				out.Printlnf("if err := %s.Unmarshal(b, &%s); err != nil { return err }", format, varNamePlainStruct)
+
+				for _, v := range validators {
+					if !v.desc().beforeJSONUnmarshal {
+						v.generate(out)
+					}
+				}
+
+				out.Printlnf("*j = %s(%s)", decl.Name, varNamePlainStruct)
+				out.Printlnf("return nil")
+				out.Indent(-1)
+				out.Printlnf("}")
+			},
+		})
+	}
 }
 
 func (g *schemaGenerator) generateType(t *schemas.Type, scope nameScope) (codegen.Type, error) {
@@ -686,7 +760,7 @@ func (g *schemaGenerator) generateStructType(t *schemas.Type, scope nameScope) (
 
 	var structType codegen.StructType
 
-	for _, name := range sortPropertiesByName(t.Properties) {
+	for _, name := range sortedKeys(t.Properties) {
 		prop := t.Properties[name]
 		isRequired := requiredNames[name]
 
@@ -759,19 +833,23 @@ func (g *schemaGenerator) generateStructType(t *schemas.Type, scope nameScope) (
 		structType.AddField(structField)
 	}
 
+	if t.Default != nil {
+		structType.DefaultValue = g.defaultPropertyValue(t)
+	}
+
 	return &structType, nil
 }
 
 func (g *schemaGenerator) defaultPropertyValue(prop *schemas.Type) any {
 	if prop.AdditionalProperties != nil {
 		if len(prop.AdditionalProperties.Type) == 0 {
-			return map[string]any{}
+			return prop.Default
 		}
 
 		if len(prop.AdditionalProperties.Type) != 1 {
 			g.warner("Additional property has multiple types; will be represented as an empty interface with no validation")
 
-			return map[string]any{}
+			return prop.Default
 		}
 
 		switch prop.AdditionalProperties.Type[0] {
@@ -791,7 +869,7 @@ func (g *schemaGenerator) defaultPropertyValue(prop *schemas.Type) any {
 			return map[string]bool{}
 
 		default:
-			return map[string]any{}
+			return prop.Default
 		}
 	}
 
@@ -812,6 +890,30 @@ func (g *schemaGenerator) generateTypeInline(t *schemas.Type, scope nameScope) (
 			}
 		}
 
+		if len(t.AnyOf) > 0 {
+			for i, typ := range t.AnyOf {
+				typ.IsSubSchemaTypeElem = true
+
+				g.generateTypeInline(typ, scope.add(fmt.Sprintf("_%d", i)))
+			}
+
+			anyOfType, err := schemas.AnyOf(t.AnyOf)
+			if err != nil {
+				return nil, fmt.Errorf("could not merge anyOf types: %w", err)
+			}
+
+			return g.generateTypeInline(anyOfType, scope)
+		}
+
+		if len(t.AllOf) > 0 {
+			allOfType, err := schemas.AllOf(t.AllOf)
+			if err != nil {
+				return nil, fmt.Errorf("could not merge allOf types: %w", err)
+			}
+
+			return g.generateTypeInline(allOfType, scope)
+		}
+
 		typeIndex := 0
 
 		var typeShouldBePointer bool
@@ -830,15 +932,6 @@ func (g *schemaGenerator) generateTypeInline(t *schemas.Type, scope nameScope) (
 			g.warner("Property has multiple types; will be represented as interface{} with no validation")
 
 			return codegen.EmptyInterfaceType{}, nil
-		}
-
-		if len(t.AllOf) > 0 {
-			allOfType, err := schemas.MergeTypes(t.AllOf)
-			if err != nil {
-				return nil, fmt.Errorf("could not merge allOf types: %w", err)
-			}
-
-			return g.generateTypeInline(allOfType, scope)
 		}
 
 		if len(t.Type) == 0 {

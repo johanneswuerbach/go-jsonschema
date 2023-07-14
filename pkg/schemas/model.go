@@ -111,6 +111,15 @@ func (t *TypeList) UnmarshalJSON(b []byte) error {
 // RFC draft-wright-json-schema-validation-00, section 5.26.
 type Definitions map[string]*Type
 
+type SubSchemaType string
+
+const (
+	SubSchemaTypeAllOf SubSchemaType = "allOf"
+	SubSchemaTypeAnyOf SubSchemaType = "anyOf"
+	SubSchemaTypeOneOf SubSchemaType = "oneOf"
+	SubSchemaTypeNot   SubSchemaType = "not"
+)
+
 // Type represents a JSON Schema object type.
 type Type struct {
 	// RFC draft-wright-json-schema-00.
@@ -160,21 +169,10 @@ type Type struct {
 	// ExtGoCustomType is the name of a (qualified or not) custom Go type
 	// to use for the field.
 	GoJSONSchemaExtension *GoJSONSchemaExtension `json:"goJSONSchema,omitempty"` //nolint:tagliatelle // breaking change
-}
 
-func (value *Type) Merge(types ...*Type) error {
-	opts := []func(*mergo.Config){
-		mergo.WithAppendSlice,
-		mergo.WithTransformers(typeListTransformer{}),
-	}
-
-	for _, t := range types {
-		if err := mergo.Merge(value, t, opts...); err != nil {
-			return fmt.Errorf("%w: %w", ErrCannotMergeTypes, err)
-		}
-	}
-
-	return nil
+	// SubSchemaType marks the type as being a subschema type
+	SubSchemaType       SubSchemaType
+	IsSubSchemaTypeElem bool
 }
 
 // UnmarshalJSON accepts booleans as schemas where `true` is equivalent to `{}`
@@ -219,14 +217,44 @@ func (value *Type) UnmarshalJSON(raw []byte) error {
 	return nil
 }
 
+func AllOf(types []*Type) (*Type, error) {
+	typ, err := MergeTypes(types)
+	if err != nil {
+		return nil, err
+	}
+
+	typ.SubSchemaType = SubSchemaTypeAllOf
+
+	return typ, nil
+}
+
+func AnyOf(types []*Type) (*Type, error) {
+	typ, err := MergeTypes(types)
+	if err != nil {
+		return nil, err
+	}
+
+	typ.SubSchemaType = SubSchemaTypeAnyOf
+
+	return typ, nil
+}
+
 func MergeTypes(types []*Type) (*Type, error) {
 	if len(types) == 0 {
 		return nil, nil
 	}
 
-	result := types[0]
-	if err := result.Merge(types[1:]...); err != nil {
-		return nil, err
+	opts := []func(*mergo.Config){
+		mergo.WithAppendSlice,
+		mergo.WithTransformers(typeListTransformer{}),
+	}
+
+	var result = &Type{}
+
+	for _, t := range types {
+		if err := mergo.Merge(result, t, opts...); err != nil {
+			return nil, fmt.Errorf("%w: %w", ErrCannotMergeTypes, err)
+		}
 	}
 
 	return result, nil
