@@ -175,7 +175,15 @@ type Type struct {
 
 	// SubSchemaType marks the type as being a subschema type
 	SubSchemaType       SubSchemaType
-	IsSubSchemaTypeElem bool
+	isSubSchemaTypeElem bool
+}
+
+func (value *Type) IsSubSchemaTypeElem() bool {
+	return value.isSubSchemaTypeElem
+}
+
+func (value *Type) SetSubSchemaTypeElem() {
+	value.isSubSchemaTypeElem = true
 }
 
 // UnmarshalJSON accepts booleans as schemas where `true` is equivalent to `{}`

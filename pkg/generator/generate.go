@@ -12,6 +12,7 @@ import (
 	"github.com/atombender/go-jsonschema/pkg/codegen"
 	"github.com/atombender/go-jsonschema/pkg/schemas"
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 )
 
 type Config struct {
@@ -442,7 +443,15 @@ func (g *schemaGenerator) generateDeclaredType(t *schemas.Type, scope nameScope)
 	if !g.output.isUniqueTypeName(scope.string()) {
 		odecl := g.output.declsByName[scope.string()]
 
-		if cmp.Equal(odecl.SchemaType, t) {
+		if cmp.Equal(odecl.SchemaType, t, cmpOpts(*odecl.SchemaType, *t)...) {
+			return &codegen.NamedType{Decl: odecl}, nil
+		}
+
+		if odecl := g.output.declsBySchema[t]; odecl != nil {
+			return &codegen.NamedType{Decl: odecl}, nil
+		}
+
+		if odecl := g.output.getDeclByEqualSchema(scope.string(), t); odecl != nil {
 			return &codegen.NamedType{Decl: odecl}, nil
 		}
 	}
@@ -529,7 +538,7 @@ func (g *schemaGenerator) generateDeclaredType(t *schemas.Type, scope nameScope)
 			}
 		}
 
-		if t.IsSubSchemaTypeElem || len(validators) > 0 {
+		if t.IsSubSchemaTypeElem() || len(validators) > 0 {
 			g.generateUnmarshaler(decl, validators)
 		}
 	}
@@ -902,7 +911,7 @@ func (g *schemaGenerator) generateTypeInline(t *schemas.Type, scope nameScope) (
 
 		if len(t.AnyOf) > 0 {
 			for i, typ := range t.AnyOf {
-				typ.IsSubSchemaTypeElem = true
+				typ.SetSubSchemaTypeElem()
 
 				g.generateTypeInline(typ, scope.add(fmt.Sprintf("_%d", i)))
 			}
@@ -949,7 +958,7 @@ func (g *schemaGenerator) generateTypeInline(t *schemas.Type, scope nameScope) (
 		}
 
 		if schemas.IsPrimitiveType(t.Type[typeIndex]) {
-			if t.IsSubSchemaTypeElem {
+			if t.IsSubSchemaTypeElem() {
 				return nil, nil
 			}
 
@@ -1130,6 +1139,32 @@ type output struct {
 	warner        func(string)
 }
 
+func (o *output) getDeclByEqualSchema(name string, t *schemas.Type) *codegen.TypeDecl {
+	v, ok := o.declsByName[name]
+	if !ok {
+		o.warner(fmt.Sprintf("Name not found: %s", name))
+
+		return nil
+	}
+
+	if cmp.Equal(v.SchemaType, t, cmpOpts(*v.SchemaType, *t)...) {
+		return v
+	}
+
+	for count := 1; ; count++ {
+		suffixed := fmt.Sprintf("%s_%d", name, count)
+
+		sv, ok := o.declsByName[suffixed]
+		if !ok {
+			return nil
+		}
+
+		if cmp.Equal(sv.SchemaType, t, cmpOpts(*sv.SchemaType, *t)...) {
+			return sv
+		}
+	}
+}
+
 func (o *output) isUniqueTypeName(name string) bool {
 	v, ok := o.declsByName[name]
 
@@ -1178,4 +1213,14 @@ func (ns nameScope) add(s string) nameScope {
 	result[len(result)-1] = s
 
 	return result
+}
+
+func cmpOpts(t ...schemas.Type) []cmp.Option {
+	opts := make([]cmp.Option, 0)
+
+	for _, v := range t {
+		opts = append(opts, cmpopts.IgnoreUnexported(v), cmpopts.IgnoreFields(v, "Ref"))
+	}
+
+	return opts
 }
