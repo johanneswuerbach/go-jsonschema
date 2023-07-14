@@ -11,6 +11,7 @@ import (
 	"github.com/atombender/go-jsonschema/internal/x/text"
 	"github.com/atombender/go-jsonschema/pkg/codegen"
 	"github.com/atombender/go-jsonschema/pkg/schemas"
+	"github.com/google/go-cmp/cmp"
 )
 
 type Config struct {
@@ -438,13 +439,22 @@ func (g *schemaGenerator) generateDeclaredType(t *schemas.Type, scope nameScope)
 		return &codegen.NamedType{Decl: decl}, nil
 	}
 
+	if !g.output.isUniqueTypeName(scope.string()) {
+		odecl := g.output.declsByName[scope.string()]
+
+		if cmp.Equal(odecl.SchemaType, t) {
+			return &codegen.NamedType{Decl: odecl}, nil
+		}
+	}
+
 	if t.Enum != nil {
 		return g.generateEnumType(t, scope)
 	}
 
 	decl := codegen.TypeDecl{
-		Name:    g.output.uniqueTypeName(scope.string()),
-		Comment: t.Description,
+		Name:       g.output.uniqueTypeName(scope.string()),
+		Comment:    t.Description,
+		SchemaType: t,
 	}
 	g.output.declsBySchema[t] = &decl
 	g.output.declsByName[decl.Name] = &decl
@@ -1060,8 +1070,9 @@ func (g *schemaGenerator) generateEnumType(t *schemas.Type, scope nameScope) (co
 	}
 
 	enumDecl := codegen.TypeDecl{
-		Name: g.output.uniqueTypeName(scope.string()),
-		Type: enumType,
+		Name:       g.output.uniqueTypeName(scope.string()),
+		Type:       enumType,
+		SchemaType: t,
 	}
 	g.output.file.Package.AddDecl(&enumDecl)
 
@@ -1117,6 +1128,12 @@ type output struct {
 	declsByName   map[string]*codegen.TypeDecl
 	declsBySchema map[*schemas.Type]*codegen.TypeDecl
 	warner        func(string)
+}
+
+func (o *output) isUniqueTypeName(name string) bool {
+	v, ok := o.declsByName[name]
+
+	return !ok || (ok && v.Type == nil)
 }
 
 func (o *output) uniqueTypeName(name string) string {

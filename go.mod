@@ -4,6 +4,9 @@ go 1.21
 
 require (
 	github.com/goccy/go-yaml v1.11.2
+	github.com/magiconair/properties v1.8.7
+	dario.cat/mergo v1.0.0
+	github.com/google/go-cmp v0.5.9
 	github.com/mitchellh/go-wordwrap v1.0.1
 	github.com/pkg/errors v0.9.1
 	github.com/sanity-io/litter v1.5.5
@@ -12,7 +15,6 @@ require (
 )
 
 require (
-	dario.cat/mergo v1.0.0 // indirect
 	github.com/fatih/color v1.13.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/mattn/go-colorable v0.1.12 // indirect

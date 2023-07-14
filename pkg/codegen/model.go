@@ -192,9 +192,10 @@ func (i *Import) Generate(out *Emitter) {
 
 // TypeDecl is a "type <name> = <definition>".
 type TypeDecl struct {
-	Name    string
-	Type    Type
-	Comment string
+	Name       string
+	Type       Type
+	Comment    string
+	SchemaType *schemas.Type
 }
 
 func (td *TypeDecl) GetName() string {
