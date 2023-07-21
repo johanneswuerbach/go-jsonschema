@@ -9,10 +9,10 @@ import (
 	"strings"
 
 	"github.com/atombender/go-jsonschema/internal/x/text"
+	"github.com/atombender/go-jsonschema/pkg/cmputil"
 	"github.com/atombender/go-jsonschema/pkg/codegen"
 	"github.com/atombender/go-jsonschema/pkg/schemas"
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 )
 
 type Config struct {
@@ -443,7 +443,7 @@ func (g *schemaGenerator) generateDeclaredType(t *schemas.Type, scope nameScope)
 	if !g.output.isUniqueTypeName(scope.string()) {
 		odecl := g.output.declsByName[scope.string()]
 
-		if cmp.Equal(odecl.SchemaType, t, cmpOpts(*odecl.SchemaType, *t)...) {
+		if cmp.Equal(odecl.SchemaType, t, cmputil.Opts(*odecl.SchemaType, *t)...) {
 			return &codegen.NamedType{Decl: odecl}, nil
 		}
 
@@ -633,7 +633,6 @@ func (g *schemaGenerator) generateUnmarshaler(decl codegen.TypeDecl, validators 
 
 		g.output.file.Package.AddDecl(&codegen.Method{
 			Impl: func(out *codegen.Emitter) {
-
 				out.Commentf("Unmarshal%s implements %s.Unmarshaler.", strings.ToUpper(format), format)
 				out.Printlnf("func (j *%s) Unmarshal%s(b []byte) error {", decl.Name, strings.ToUpper(format))
 				out.Indent(1)
@@ -1147,7 +1146,7 @@ func (o *output) getDeclByEqualSchema(name string, t *schemas.Type) *codegen.Typ
 		return nil
 	}
 
-	if cmp.Equal(v.SchemaType, t, cmpOpts(*v.SchemaType, *t)...) {
+	if cmp.Equal(v.SchemaType, t, cmputil.Opts(*v.SchemaType, *t)...) {
 		return v
 	}
 
@@ -1159,7 +1158,7 @@ func (o *output) getDeclByEqualSchema(name string, t *schemas.Type) *codegen.Typ
 			return nil
 		}
 
-		if cmp.Equal(sv.SchemaType, t, cmpOpts(*sv.SchemaType, *t)...) {
+		if cmp.Equal(sv.SchemaType, t, cmputil.Opts(*sv.SchemaType, *t)...) {
 			return sv
 		}
 	}
@@ -1213,14 +1212,4 @@ func (ns nameScope) add(s string) nameScope {
 	result[len(result)-1] = s
 
 	return result
-}
-
-func cmpOpts(t ...schemas.Type) []cmp.Option {
-	opts := make([]cmp.Option, 0)
-
-	for _, v := range t {
-		opts = append(opts, cmpopts.IgnoreUnexported(v), cmpopts.IgnoreFields(v, "Ref"))
-	}
-
-	return opts
 }
