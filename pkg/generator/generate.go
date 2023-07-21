@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"go/format"
+	"math"
 	"os"
 	"path/filepath"
 	"strings"
@@ -51,6 +52,7 @@ const (
 	varNamePlainStruct = "plain"
 	varNameRawMap      = "raw"
 	interfaceTypeName  = "interface{}"
+	typePlain          = "Plain"
 )
 
 var (
@@ -232,11 +234,17 @@ func (g *Generator) beginOutput(id string, outputName, packageName string) (*out
 }
 
 func (g *Generator) makeEnumConstantName(typeName, value string) string {
-	if strings.ContainsAny(typeName[len(typeName)-1:], "0123456789") {
-		return typeName + "_" + g.caser.Identifierize(value)
+	idv := g.caser.Identifierize(value)
+
+	if len(typeName) == 0 {
+		return "Enum" + idv
 	}
 
-	return typeName + g.caser.Identifierize(value)
+	if strings.ContainsAny(typeName[len(typeName)-1:], "0123456789") {
+		return typeName + "_" + idv
+	}
+
+	return typeName + idv
 }
 
 type schemaGenerator struct {
@@ -492,9 +500,9 @@ func (g *schemaGenerator) generateDeclaredType(t *schemas.Type, scope nameScope)
 	if structType, ok := theType.(*codegen.StructType); ok {
 		var validators []validator
 
-		switch t.SubSchemaType {
+		switch t.GetSubSchemaType() {
 		case schemas.SubSchemaTypeAnyOf:
-			validators = append(validators, &anyOfValidator{decl.Name, len(structType.Fields)})
+			validators = append(validators, &anyOfValidator{decl.Name, t.GetSubSchemasCount()})
 
 			g.generateUnmarshaler(decl, validators)
 
@@ -540,6 +548,12 @@ func (g *schemaGenerator) generateDeclaredType(t *schemas.Type, scope nameScope)
 
 		if t.IsSubSchemaTypeElem() || len(validators) > 0 {
 			g.generateUnmarshaler(decl, validators)
+		}
+	}
+
+	if _, ok := theType.(*codegen.MapType); ok {
+		if t.IsSubSchemaTypeElem() {
+			g.generateUnmarshaler(decl, []validator{})
 		}
 	}
 
@@ -625,7 +639,7 @@ func (g *schemaGenerator) generateUnmarshaler(decl codegen.TypeDecl, validators 
 	if g.config.ExtraImports {
 		formats = append(formats, "yaml")
 
-		g.output.file.Package.AddImport(g.config.YAMLPackage, "yaml")
+		g.output.file.Package.AddImport(YAMLPackage, "yaml")
 	}
 
 	for _, format := range formats {
@@ -644,8 +658,16 @@ func (g *schemaGenerator) generateUnmarshaler(decl codegen.TypeDecl, validators 
 					}
 				}
 
-				out.Printlnf("type Plain %s", decl.Name)
-				out.Printlnf("var %s Plain", varNamePlainStruct)
+				tp := typePlain
+
+				if tp == decl.Name {
+					for i := 0; !g.output.isUniqueTypeName(tp) && i < math.MaxInt; i++ {
+						tp = fmt.Sprintf("%s_%d", typePlain, i)
+					}
+				}
+
+				out.Printlnf("type %s %s", tp, decl.Name)
+				out.Printlnf("var %s %s", varNamePlainStruct, tp)
 				out.Printlnf("if err := %s.Unmarshal(b, &%s); err != nil { return err }", format, varNamePlainStruct)
 
 				for _, v := range validators {
@@ -758,7 +780,7 @@ func (g *schemaGenerator) generateStructType(t *schemas.Type, scope nameScope) (
 		var err error
 
 		if t.AdditionalProperties != nil {
-			if valueType, err = g.generateType(t.AdditionalProperties, nil); err != nil {
+			if valueType, err = g.generateType(t.AdditionalProperties, scope.add("Value")); err != nil {
 				return nil, err
 			}
 		}

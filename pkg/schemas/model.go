@@ -173,17 +173,34 @@ type Type struct {
 	// to use for the field.
 	GoJSONSchemaExtension *GoJSONSchemaExtension `json:"goJSONSchema,omitempty"` //nolint:tagliatelle // breaking change
 
-	// SubSchemaType marks the type as being a subschema type
-	SubSchemaType       SubSchemaType
-	isSubSchemaTypeElem bool
+	// subSchemaType marks the type as being a subschema type
+	subSchemaType     SubSchemaType
+	subSchemasCount   int
+	subSchemaTypeElem bool
+}
+
+func (value *Type) SetSubSchemaType(sst SubSchemaType) {
+	value.subSchemaType = sst
+}
+
+func (value *Type) GetSubSchemaType() SubSchemaType {
+	return value.subSchemaType
+}
+
+func (value *Type) SetSubSchemasCount(ssc int) {
+	value.subSchemasCount = ssc
+}
+
+func (value *Type) GetSubSchemasCount() int {
+	return value.subSchemasCount
 }
 
 func (value *Type) IsSubSchemaTypeElem() bool {
-	return value.isSubSchemaTypeElem
+	return value.subSchemaTypeElem
 }
 
 func (value *Type) SetSubSchemaTypeElem() {
-	value.isSubSchemaTypeElem = true
+	value.subSchemaTypeElem = true
 }
 
 // UnmarshalJSON accepts booleans as schemas where `true` is equivalent to `{}`
@@ -234,7 +251,7 @@ func AllOf(types []*Type) (*Type, error) {
 		return nil, err
 	}
 
-	typ.SubSchemaType = SubSchemaTypeAllOf
+	typ.subSchemaType = SubSchemaTypeAllOf
 
 	return typ, nil
 }
@@ -245,7 +262,8 @@ func AnyOf(types []*Type) (*Type, error) {
 		return nil, err
 	}
 
-	typ.SubSchemaType = SubSchemaTypeAnyOf
+	typ.subSchemaType = SubSchemaTypeAnyOf
+	typ.subSchemasCount = len(types)
 
 	return typ, nil
 }

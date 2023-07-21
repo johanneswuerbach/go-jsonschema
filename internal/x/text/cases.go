@@ -49,6 +49,10 @@ func (c *Caser) Identifierize(s string) string {
 		ident = "A" + ident
 	}
 
+	if ident == "" {
+		return "Undefined"
+	}
+
 	return ident
 }
 
