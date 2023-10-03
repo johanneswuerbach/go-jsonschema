@@ -173,7 +173,7 @@ type Type struct {
 	// to use for the field.
 	GoJSONSchemaExtension *GoJSONSchemaExtension `json:"goJSONSchema,omitempty"` //nolint:tagliatelle // breaking change
 
-	// subSchemaType marks the type as being a subschema type
+	// SubSchemaType marks the type as being a subschema type.
 	subSchemaType     SubSchemaType
 	subSchemasCount   int
 	subSchemaTypeElem bool
@@ -273,7 +273,7 @@ func MergeTypes(types []*Type) (*Type, error) {
 		return nil, ErrEmptyTypesList
 	}
 
-	var result = &Type{}
+	result := &Type{}
 
 	if isPrimitiveTypeList(types) {
 		return result, nil

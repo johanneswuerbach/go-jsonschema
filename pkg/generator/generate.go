@@ -10,10 +10,11 @@ import (
 	"strings"
 
 	"github.com/atombender/go-jsonschema/internal/x/text"
+	"github.com/google/go-cmp/cmp"
+
 	"github.com/atombender/go-jsonschema/pkg/cmputil"
 	"github.com/atombender/go-jsonschema/pkg/codegen"
 	"github.com/atombender/go-jsonschema/pkg/schemas"
-	"github.com/google/go-cmp/cmp"
 )
 
 type Config struct {
@@ -198,7 +199,7 @@ func (g *Generator) findOutputFileForSchemaID(id string) (*output, error) {
 	return g.beginOutput(id, g.config.DefaultOutputName, g.config.DefaultPackageName)
 }
 
-func (g *Generator) beginOutput(id string, outputName, packageName string) (*output, error) {
+func (g *Generator) beginOutput(id, outputName, packageName string) (*output, error) {
 	if packageName == "" {
 		return nil, fmt.Errorf("%w: %q", errMapURIToPackageName, id)
 	}
@@ -500,8 +501,7 @@ func (g *schemaGenerator) generateDeclaredType(t *schemas.Type, scope nameScope)
 	if structType, ok := theType.(*codegen.StructType); ok {
 		var validators []validator
 
-		switch t.GetSubSchemaType() {
-		case schemas.SubSchemaTypeAnyOf:
+		if t.GetSubSchemaType() == schemas.SubSchemaTypeAnyOf {
 			validators = append(validators, &anyOfValidator{decl.Name, t.GetSubSchemasCount()})
 
 			g.generateUnmarshaler(decl, validators)
@@ -620,8 +620,7 @@ func (g *schemaGenerator) structFieldValidators(
 
 func (g *schemaGenerator) generateUnmarshaler(decl codegen.TypeDecl, validators []validator) {
 	for _, v := range validators {
-		switch v.(type) {
-		case *anyOfValidator:
+		if _, ok := v.(*anyOfValidator); ok {
 			g.output.file.Package.AddImport("errors", "")
 		}
 
@@ -934,7 +933,9 @@ func (g *schemaGenerator) generateTypeInline(t *schemas.Type, scope nameScope) (
 			for i, typ := range t.AnyOf {
 				typ.SetSubSchemaTypeElem()
 
-				g.generateTypeInline(typ, scope.add(fmt.Sprintf("_%d", i)))
+				if _, err := g.generateTypeInline(typ, scope.add(fmt.Sprintf("_%d", i))); err != nil {
+					return nil, err
+				}
 			}
 
 			anyOfType, err := schemas.AnyOf(t.AnyOf)

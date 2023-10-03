@@ -122,6 +122,7 @@ func (v *defaultValidator) dumpDefaultValue(out *codegen.Emitter) any {
 			for _, k := range sortedKeys(dvm) {
 				namedFields += fmt.Sprintf("\n%s: %s,", upperFirst(k), litter.Sdump(dvm[k]))
 			}
+
 			namedFields += "\n"
 
 			return fmt.Sprintf(`%s{%s}`, nt.Decl.GetName(), namedFields)
@@ -288,7 +289,9 @@ func (v *anyOfValidator) generate(out *codegen.Emitter) {
 	for i := 0; i < v.elemCount; i++ {
 		out.Printlnf(`var %s_%d %s_%d`, lowerFirst(v.fieldName), i, upperFirst(v.fieldName), i)
 	}
+
 	out.Printlnf(`var errs []error`)
+
 	for i := 0; i < v.elemCount; i++ {
 		out.Printlnf(`if err := %s_%d.UnmarshalJSON(b); err != nil {`, lowerFirst(v.fieldName), i)
 		out.Indent(1)
