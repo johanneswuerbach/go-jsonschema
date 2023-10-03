@@ -29,9 +29,45 @@ func (j *A10212AnyOfConfigurationsElem_0) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *A10212AnyOfConfigurationsElem_0) UnmarshalJSON(b []byte) error {
+	var raw map[string]interface{}
+	if err := json.Unmarshal(b, &raw); err != nil {
+		return err
+	}
+	if v, ok := raw["foo"]; !ok || v == nil {
+		return fmt.Errorf("field foo in A10212AnyOfConfigurationsElem_0: required")
+	}
+	type Plain A10212AnyOfConfigurationsElem_0
+	var plain Plain
+	if err := json.Unmarshal(b, &plain); err != nil {
+		return err
+	}
+	*j = A10212AnyOfConfigurationsElem_0(plain)
+	return nil
+}
+
 type A10212AnyOfConfigurationsElem_1 struct {
 	// Bar corresponds to the JSON schema field "bar".
 	Bar float64 `json:"bar" yaml:"bar" mapstructure:"bar"`
+}
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *A10212AnyOfConfigurationsElem_1) UnmarshalJSON(b []byte) error {
+	var raw map[string]interface{}
+	if err := json.Unmarshal(b, &raw); err != nil {
+		return err
+	}
+	if v, ok := raw["bar"]; !ok || v == nil {
+		return fmt.Errorf("field bar in A10212AnyOfConfigurationsElem_1: required")
+	}
+	type Plain A10212AnyOfConfigurationsElem_1
+	var plain Plain
+	if err := json.Unmarshal(b, &plain); err != nil {
+		return err
+	}
+	*j = A10212AnyOfConfigurationsElem_1(plain)
+	return nil
 }
 
 // UnmarshalJSON implements json.Unmarshaler.

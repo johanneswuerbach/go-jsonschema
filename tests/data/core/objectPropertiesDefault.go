@@ -45,78 +45,6 @@ const EventNameHOLIDAY EventName = "HOLIDAY"
 type EventTagsElem string
 
 const EventTagsElemCITY EventTagsElem = "CITY"
-const EventTagsElemCOUNTRY EventTagsElem = "COUNTRY"
-const EventTagsElemPERSON EventTagsElem = "PERSON"
-const EventTagsElemREGION EventTagsElem = "REGION"
-
-// UnmarshalJSON implements json.Unmarshaler.
-func (j *DecoratedPlannerDecorator) UnmarshalJSON(b []byte) error {
-	var raw map[string]interface{}
-	if err := json.Unmarshal(b, &raw); err != nil {
-		return err
-	}
-	type Plain DecoratedPlannerDecorator
-	var plain Plain
-	if err := json.Unmarshal(b, &plain); err != nil {
-		return err
-	}
-	if v, ok := raw["color"]; !ok || v == nil {
-		plain.Color = "#ffffff"
-	}
-	*j = DecoratedPlannerDecorator(plain)
-	return nil
-}
-
-var enumValues_EventTagsElem = []interface{}{
-	"COUNTRY",
-	"REGION",
-	"CITY",
-	"PERSON",
-}
-
-// UnmarshalJSON implements json.Unmarshaler.
-func (j *EventName) UnmarshalJSON(b []byte) error {
-	var v string
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	var ok bool
-	for _, expected := range enumValues_EventName {
-		if reflect.DeepEqual(v, expected) {
-			ok = true
-			break
-		}
-	}
-	if !ok {
-		return fmt.Errorf("invalid value (expected one of %#v): %#v", enumValues_EventName, v)
-	}
-	*j = EventName(v)
-	return nil
-}
-
-// UnmarshalJSON implements json.Unmarshaler.
-func (j *Event) UnmarshalJSON(b []byte) error {
-	var raw map[string]interface{}
-	if err := json.Unmarshal(b, &raw); err != nil {
-		return err
-	}
-	type Plain Event
-	var plain Plain
-	if err := json.Unmarshal(b, &plain); err != nil {
-		return err
-	}
-	if v, ok := raw["tags"]; !ok || v == nil {
-		plain.Tags = []EventTagsElem{}
-	}
-	*j = Event(plain)
-	return nil
-}
-
-var enumValues_EventName = []interface{}{
-	"BIRTHDAY",
-	"GAME",
-	"HOLIDAY",
-}
 
 // UnmarshalJSON implements json.Unmarshaler.
 func (j *DecoratedPlanner) UnmarshalJSON(b []byte) error {
@@ -156,6 +84,137 @@ func (j *EventTagsElem) UnmarshalJSON(b []byte) error {
 		return fmt.Errorf("invalid value (expected one of %#v): %#v", enumValues_EventTagsElem, v)
 	}
 	*j = EventTagsElem(v)
+	return nil
+}
+
+const EventTagsElemCOUNTRY EventTagsElem = "COUNTRY"
+const EventTagsElemREGION EventTagsElem = "REGION"
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *EventName) UnmarshalJSON(b []byte) error {
+	var v string
+	if err := json.Unmarshal(b, &v); err != nil {
+		return err
+	}
+	var ok bool
+	for _, expected := range enumValues_EventName {
+		if reflect.DeepEqual(v, expected) {
+			ok = true
+			break
+		}
+	}
+	if !ok {
+		return fmt.Errorf("invalid value (expected one of %#v): %#v", enumValues_EventName, v)
+	}
+	*j = EventName(v)
+	return nil
+}
+
+const EventTagsElemPERSON EventTagsElem = "PERSON"
+
+var enumValues_EventName = []interface{}{
+	"BIRTHDAY",
+	"GAME",
+	"HOLIDAY",
+}
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *Event) UnmarshalJSON(b []byte) error {
+	var raw map[string]interface{}
+	if err := json.Unmarshal(b, &raw); err != nil {
+		return err
+	}
+	type Plain Event
+	var plain Plain
+	if err := json.Unmarshal(b, &plain); err != nil {
+		return err
+	}
+	if v, ok := raw["tags"]; !ok || v == nil {
+		plain.Tags = []EventTagsElem{}
+	}
+	*j = Event(plain)
+	return nil
+}
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *Event) UnmarshalJSON(b []byte) error {
+	var raw map[string]interface{}
+	if err := json.Unmarshal(b, &raw); err != nil {
+		return err
+	}
+	type Plain Event
+	var plain Plain
+	if err := json.Unmarshal(b, &plain); err != nil {
+		return err
+	}
+	if v, ok := raw["tags"]; !ok || v == nil {
+		plain.Tags = []EventTagsElem{}
+	}
+	*j = Event(plain)
+	return nil
+}
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *DecoratedPlannerDecorator) UnmarshalJSON(b []byte) error {
+	var raw map[string]interface{}
+	if err := json.Unmarshal(b, &raw); err != nil {
+		return err
+	}
+	type Plain DecoratedPlannerDecorator
+	var plain Plain
+	if err := json.Unmarshal(b, &plain); err != nil {
+		return err
+	}
+	if v, ok := raw["color"]; !ok || v == nil {
+		plain.Color = "#ffffff"
+	}
+	*j = DecoratedPlannerDecorator(plain)
+	return nil
+}
+
+var enumValues_EventTagsElem = []interface{}{
+	"COUNTRY",
+	"REGION",
+	"CITY",
+	"PERSON",
+}
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *DecoratedPlanner) UnmarshalJSON(b []byte) error {
+	var raw map[string]interface{}
+	if err := json.Unmarshal(b, &raw); err != nil {
+		return err
+	}
+	type Plain DecoratedPlanner
+	var plain Plain
+	if err := json.Unmarshal(b, &plain); err != nil {
+		return err
+	}
+	if v, ok := raw["decorator"]; !ok || v == nil {
+		plain.Decorator = DecoratedPlannerDecorator{
+			Color: "#ffffff",
+			Theme: nil,
+		}
+	}
+	*j = DecoratedPlanner(plain)
+	return nil
+}
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *DecoratedPlannerDecorator) UnmarshalJSON(b []byte) error {
+	var raw map[string]interface{}
+	if err := json.Unmarshal(b, &raw); err != nil {
+		return err
+	}
+	type Plain DecoratedPlannerDecorator
+	var plain Plain
+	if err := json.Unmarshal(b, &plain); err != nil {
+		return err
+	}
+	if v, ok := raw["color"]; !ok || v == nil {
+		plain.Color = "#ffffff"
+	}
+	*j = DecoratedPlannerDecorator(plain)
 	return nil
 }
 

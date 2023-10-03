@@ -34,6 +34,27 @@ func (j *A10211AllOfConfigurationsElem) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *A10211AllOfConfigurationsElem) UnmarshalJSON(b []byte) error {
+	var raw map[string]interface{}
+	if err := json.Unmarshal(b, &raw); err != nil {
+		return err
+	}
+	if v, ok := raw["bar"]; !ok || v == nil {
+		return fmt.Errorf("field bar in A10211AllOfConfigurationsElem: required")
+	}
+	if v, ok := raw["foo"]; !ok || v == nil {
+		return fmt.Errorf("field foo in A10211AllOfConfigurationsElem: required")
+	}
+	type Plain A10211AllOfConfigurationsElem
+	var plain Plain
+	if err := json.Unmarshal(b, &plain); err != nil {
+		return err
+	}
+	*j = A10211AllOfConfigurationsElem(plain)
+	return nil
+}
+
 type A10211AllOf struct {
 	// Configurations corresponds to the JSON schema field "configurations".
 	Configurations []A10211AllOfConfigurationsElem `json:"configurations,omitempty" yaml:"configurations,omitempty" mapstructure:"configurations,omitempty"`
