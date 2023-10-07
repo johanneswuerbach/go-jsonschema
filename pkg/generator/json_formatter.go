@@ -1,6 +1,8 @@
 package generator
 
 import (
+	"fmt"
+	"math"
 	"strings"
 
 	"github.com/atombender/go-jsonschema/pkg/codegen"
@@ -12,7 +14,11 @@ const (
 
 type jsonFormatter struct{}
 
-func (jf *jsonFormatter) generate(declType codegen.TypeDecl, validators []validator) func(*codegen.Emitter) {
+func (jf *jsonFormatter) generate(
+	output *output,
+	declType codegen.TypeDecl,
+	validators []validator,
+) func(*codegen.Emitter) {
 	return func(out *codegen.Emitter) {
 		out.Commentf("Unmarshal%s implements %s.Unmarshaler.", strings.ToUpper(formatJSON), formatJSON)
 		out.Printlnf("func (j *%s) Unmarshal%s(b []byte) error {", declType.Name, strings.ToUpper(formatJSON))
@@ -27,8 +33,16 @@ func (jf *jsonFormatter) generate(declType codegen.TypeDecl, validators []valida
 			}
 		}
 
-		out.Printlnf("type Plain %s", declType.Name)
-		out.Printlnf("var %s Plain", varNamePlainStruct)
+		tp := typePlain
+
+		if tp == declType.Name {
+			for i := 0; !output.isUniqueTypeName(tp) && i < math.MaxInt; i++ {
+				tp = fmt.Sprintf("%s_%d", typePlain, i)
+			}
+		}
+
+		out.Printlnf("type %s %s", tp, declType.Name)
+		out.Printlnf("var %s %s", varNamePlainStruct, tp)
 		out.Printlnf("if err := %s.Unmarshal(b, &%s); err != nil { return err }",
 			formatJSON, varNamePlainStruct)
 

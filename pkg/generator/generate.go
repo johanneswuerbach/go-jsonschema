@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"go/format"
-	"math"
 	"os"
 	"path/filepath"
 	"strings"
@@ -526,26 +525,6 @@ func (g *schemaGenerator) generateDeclaredType(t *schemas.Type, scope nameScope)
 			validators = g.structFieldValidators(validators, f, f.Type, false)
 		}
 
-		if len(validators) > 0 {
-			for _, v := range validators {
-				if v.desc().hasError {
-					g.output.file.Package.AddImport("fmt", "")
-
-					break
-				}
-			}
-
-			for _, formatter := range g.formatters {
-				formatter := formatter
-
-				formatter.addImport(g.output.file)
-
-				g.output.file.Package.AddDecl(&codegen.Method{
-					Impl: formatter.generate(decl, validators),
-				})
-			}
-		}
-
 		if t.IsSubSchemaTypeElem() || len(validators) > 0 {
 			g.generateUnmarshaler(decl, validators)
 		}
@@ -619,6 +598,10 @@ func (g *schemaGenerator) structFieldValidators(
 }
 
 func (g *schemaGenerator) generateUnmarshaler(decl codegen.TypeDecl, validators []validator) {
+	if g.config.OnlyModels {
+		return
+	}
+
 	for _, v := range validators {
 		if _, ok := v.(*anyOfValidator); ok {
 			g.output.file.Package.AddImport("errors", "")
@@ -631,55 +614,13 @@ func (g *schemaGenerator) generateUnmarshaler(decl codegen.TypeDecl, validators 
 		}
 	}
 
-	formats := []string{"json"}
+	for _, formatter := range g.formatters {
+		formatter := formatter
 
-	g.output.file.Package.AddImport("encoding/json", "")
-
-	if g.config.ExtraImports {
-		formats = append(formats, "yaml")
-
-		g.output.file.Package.AddImport(YAMLPackage, "yaml")
-	}
-
-	for _, format := range formats {
-		format := format
+		formatter.addImport(g.output.file)
 
 		g.output.file.Package.AddDecl(&codegen.Method{
-			Impl: func(out *codegen.Emitter) {
-				out.Commentf("Unmarshal%s implements %s.Unmarshaler.", strings.ToUpper(format), format)
-				out.Printlnf("func (j *%s) Unmarshal%s(b []byte) error {", decl.Name, strings.ToUpper(format))
-				out.Indent(1)
-				out.Printlnf("var %s map[string]interface{}", varNameRawMap)
-				out.Printlnf("if err := %s.Unmarshal(b, &%s); err != nil { return err }", format, varNameRawMap)
-				for _, v := range validators {
-					if v.desc().beforeJSONUnmarshal {
-						v.generate(out)
-					}
-				}
-
-				tp := typePlain
-
-				if tp == decl.Name {
-					for i := 0; !g.output.isUniqueTypeName(tp) && i < math.MaxInt; i++ {
-						tp = fmt.Sprintf("%s_%d", typePlain, i)
-					}
-				}
-
-				out.Printlnf("type %s %s", tp, decl.Name)
-				out.Printlnf("var %s %s", varNamePlainStruct, tp)
-				out.Printlnf("if err := %s.Unmarshal(b, &%s); err != nil { return err }", format, varNamePlainStruct)
-
-				for _, v := range validators {
-					if !v.desc().beforeJSONUnmarshal {
-						v.generate(out)
-					}
-				}
-
-				out.Printlnf("*j = %s(%s)", decl.Name, varNamePlainStruct)
-				out.Printlnf("return nil")
-				out.Indent(-1)
-				out.Printlnf("}")
-			},
+			Impl: formatter.generate(g.output, decl, validators),
 		})
 	}
 }
