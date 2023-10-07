@@ -528,6 +528,8 @@ func (g *schemaGenerator) generateDeclaredType(t *schemas.Type, scope nameScope)
 		if t.IsSubSchemaTypeElem() || len(validators) > 0 {
 			g.generateUnmarshaler(decl, validators)
 		}
+
+		return &codegen.NamedType{Decl: &decl}, nil
 	}
 
 	if _, ok := theType.(*codegen.MapType); ok {

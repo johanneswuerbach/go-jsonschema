@@ -29,8 +29,8 @@ func (yf *yamlFormatter) generate(
 		out.Printlnf("if err := value.Decode(&%s); err != nil { return err }", varNameRawMap)
 
 		for _, v := range validators {
-			if v.desc().beforeJSONUnmarshal {
-				v.generate(out)
+			if v.desc().beforeUnmarshal {
+				v.generate(out, "yaml")
 			}
 		}
 
@@ -47,8 +47,8 @@ func (yf *yamlFormatter) generate(
 		out.Printlnf("if err := value.Decode(&%s); err != nil { return err }", varNamePlainStruct)
 
 		for _, v := range validators {
-			if !v.desc().beforeJSONUnmarshal {
-				v.generate(out)
+			if !v.desc().beforeUnmarshal {
+				v.generate(out, "yaml")
 			}
 		}
 
