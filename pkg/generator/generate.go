@@ -8,9 +8,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/atombender/go-jsonschema/internal/x/text"
 	"github.com/google/go-cmp/cmp"
 
+	"github.com/atombender/go-jsonschema/internal/x/text"
 	"github.com/atombender/go-jsonschema/pkg/cmputil"
 	"github.com/atombender/go-jsonschema/pkg/codegen"
 	"github.com/atombender/go-jsonschema/pkg/schemas"
