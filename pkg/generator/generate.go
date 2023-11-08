@@ -632,8 +632,6 @@ func (g *schemaGenerator) generateType(t *schemas.Type, scope nameScope) (codege
 
 	var typeShouldBePointer bool
 
-	two := 2
-
 	if ext := t.GoJSONSchemaExtension; ext != nil {
 		for _, pkg := range ext.Imports {
 			g.output.file.Package.AddImport(pkg, "")
@@ -656,7 +654,7 @@ func (g *schemaGenerator) generateType(t *schemas.Type, scope nameScope) (codege
 		return codegen.EmptyInterfaceType{}, nil
 	}
 
-	if len(t.Type) == two {
+	if len(t.Type) == 2 {
 		for i, t := range t.Type {
 			if t == "null" {
 				typeShouldBePointer = true
@@ -859,8 +857,6 @@ func (g *schemaGenerator) defaultPropertyValue(prop *schemas.Type) any {
 }
 
 func (g *schemaGenerator) generateTypeInline(t *schemas.Type, scope nameScope) (codegen.Type, error) {
-	two := 2
-
 	if t.Enum == nil && t.Ref == "" {
 		if ext := t.GoJSONSchemaExtension; ext != nil {
 			for _, pkg := range ext.Imports {
@@ -902,7 +898,7 @@ func (g *schemaGenerator) generateTypeInline(t *schemas.Type, scope nameScope) (
 
 		var typeShouldBePointer bool
 
-		if len(t.Type) == two {
+		if len(t.Type) == 2 {
 			for i, t := range t.Type {
 				if t == "null" {
 					typeShouldBePointer = true
