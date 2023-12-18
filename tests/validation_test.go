@@ -5,9 +5,9 @@ import (
 	"errors"
 	"testing"
 
-	testMaxLength "github.com/atombender/go-jsonschema/tests/data/validation/maxLength"
-	testMinLength "github.com/atombender/go-jsonschema/tests/data/validation/minLength"
-	"github.com/atombender/go-jsonschema/tests/helpers"
+	testMaxLength "github.com/johanneswuerbach/go-jsonschema/tests/data/validation/maxLength"
+	testMinLength "github.com/johanneswuerbach/go-jsonschema/tests/data/validation/minLength"
+	"github.com/johanneswuerbach/go-jsonschema/tests/helpers"
 )
 
 func TestMaxStringLength(t *testing.T) {

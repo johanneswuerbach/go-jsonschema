@@ -1,15 +1,15 @@
-module github.com/atombender/go-jsonschema/tests
+module github.com/johanneswuerbach/go-jsonschema/tests
 
 go 1.21
 
 replace (
-	github.com/atombender/go-jsonschema => ../
-	github.com/atombender/go-jsonschema/tests/helpers/other => ./helpers/other
+	github.com/johanneswuerbach/go-jsonschema => ../
+	github.com/johanneswuerbach/go-jsonschema/tests/helpers/other => ./helpers/other
 )
 
 require (
-	github.com/atombender/go-jsonschema v0.0.0-00010101000000-000000000000
-	github.com/atombender/go-jsonschema/tests/helpers/other v0.0.0-00010101000000-000000000000
+	github.com/johanneswuerbach/go-jsonschema v0.0.0-00010101000000-000000000000
+	github.com/johanneswuerbach/go-jsonschema/tests/helpers/other v0.0.0-00010101000000-000000000000
 	github.com/magiconair/properties v1.8.7
 	gopkg.in/yaml.v3 v3.0.1
 )
